@@ -14,10 +14,10 @@ colonne = [
 ]
 
 # Carica il dataset dal file senza intestazione
-df = pd.read_csv('../data/processed/xdays/day8.txt', names=colonne)
+df = pd.read_csv('../data/processed/xdays/day9.txt', names=colonne)
 
 # Filtra le righe in cui 'source user@domain' inizia con 'U'
 df_utenti = df[df['source user@domain'].str.match(r'^U')]
 
 
-df_utenti.to_csv('../data/processed/day8Filtrato.csv', index=False)
+df_utenti.to_csv('../data/processed/day9Filtrato.csv', index=False)
