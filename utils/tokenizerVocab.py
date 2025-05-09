@@ -89,7 +89,8 @@ def save_tokenized_data(tokenized_data, output_file_path="../data/processed/toke
 
 # Example Usage (assuming you have two files named 'your_log_file1.csv' and 'your_log_file2.csv'):
 if __name__ == "__main__":
-    log_files = ["../data/processed/day8Filtrato.csv", "../data/processed/day9Filtrato.csv"]  # Replace with the actual paths to your files
+    #log_files = ["../data/processed/day8Filtrato.csv", "../data/processed/day9Filtrato.csv"]  # Replace with the actual paths to your files
+    log_files = ["../data/proccessed/8withredSplit.csv"]
 
     try:
         vocabulary, word_counts = create_word_level_vocabulary_from_files(log_files)
