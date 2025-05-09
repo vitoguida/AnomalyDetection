@@ -84,5 +84,33 @@ if __name__ == "__main__":
 
     print("Tutti i batch sono stati salvati con timestamp.")
 
+"""
+import os
+import torch
+
+def merge_embedding_batches(input_dir, output_file):
+    all_data = []
+
+    # Ordina i file per batch index (assumendo formato: embedding_batch_0.pt, ...)
+    files = sorted(
+        [f for f in os.listdir(input_dir) if f.endswith('.pt')],
+        key=lambda x: int(x.split('_')[-1].split('.')[0])
+    )
+
+    for f in files:
+        path = os.path.join(input_dir, f)
+        batch = torch.load(path)
+        all_data.extend(batch)  # ogni elemento è una tupla: (timestamp, embedding)
+        print(f"Caricato: {f} ({len(batch)} righe)")
+
+    torch.save(all_data, output_file)
+    print(f"\nSalvato tutto in: {output_file} ({len(all_data)} righe totali)")
+
+# ===== ESEMPIO USO =====
+if __name__ == "__main__":
+    input_dir = "embeddings"
+    output_file = "all_embeddings.pt"
+    merge_embedding_batches(input_dir, output_file)
+"""
 
 
