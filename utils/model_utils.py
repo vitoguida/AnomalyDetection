@@ -1,47 +1,6 @@
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
-import matplotlib.pyplot as plt
 from data_utils import categorical_cols
-#
-
-class LSTMAnomalyModel(nn.Module):
-    def __init__(self, num_features, vocab_sizes, emb_dim=32, hidden_dim=64, lstm_dropout=0.3,DROP=False):
-        super().__init__()
-        self.embeddings = nn.ModuleList([
-            nn.Embedding(vocab_size, emb_dim) for vocab_size in vocab_sizes
-        ])
-        self.DROP = DROP
-        if DROP == True:
-            self.lstm = nn.LSTM(
-                input_size=emb_dim * num_features,
-                hidden_size=hidden_dim,
-                batch_first=True,
-                dropout=lstm_dropout,  # Dropout tra i layer dell’LSTM (se >1 layer)
-                num_layers=1  # Per attivare il dropout servono ≥2 layer
-            )
-            self.dropout = nn.Dropout(p=lstm_dropout)  # Dropout esplicito dopo LSTM
-            self.output_layers = nn.ModuleDict({
-                col: nn.Linear(hidden_dim, vocab_sizes[i])
-                for i, col in enumerate(categorical_cols)
-            })
-
-        else :
-            self.lstm = nn.LSTM(input_size=emb_dim * num_features, hidden_size=hidden_dim, batch_first=True)
-            self.output_layers = nn.ModuleDict({
-                col: nn.Linear(hidden_dim, vocab_sizes[i])
-                for i, col in enumerate(categorical_cols)
-            })
-
-
-    def forward(self, x):  # QUI è dove forward deve stare
-        embedded = [self.embeddings[i](x[:, :, i]) for i in range(len(categorical_cols))]
-        x_embed = torch.cat(embedded, dim=-1)
-        _, (h_n, _) = self.lstm(x_embed)
-        h = h_n[-1]
-        if self.DROP == True:
-            h = self.dropout(h)
-        return {col: self.output_layers[col](h) for col in categorical_cols}
 
 def train_model(model, dataloader, device, epochs=10):
     optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
@@ -100,3 +59,28 @@ def is_event_anomalous(df, model, index, seq_len, threshold, device):
 
 def find_anomalies(df):
     return df[df['is_redteam'].astype(str) == '1'].index.tolist()
+
+def evaluate_anomalies(df, model, anomaly_indices, seq_len, threshold, device):
+
+    print(f"Totale righe marcate come anomalie (ground truth): {len(anomaly_indices)}")
+    true_detected = 0
+
+    for idx in anomaly_indices:
+        try:
+            # Calcolo del punteggio e determinazione dell'anomalia
+            score, is_anom = is_event_anomalous(df, model, idx, seq_len, threshold, device)
+            print(f"[{idx}] Score: {score:.2f} -> {'ANOMALO' if is_anom else 'normale'}")
+
+            # Incremento del conteggio se l'anomalia è rilevata correttamente
+            if is_anom:
+                true_detected += 1
+        except ValueError:
+            # Gestione del caso in cui non è possibile calcolare l'anomalia
+            continue
+
+    # Calcolo della percentuale di anomalie rilevate correttamente
+    detection_percentage = 100 * true_detected / len(anomaly_indices) if len(anomaly_indices) > 0 else 0
+    print(f"Anomalie rilevate: {true_detected}")
+    print(f"Percentuale rilevate correttamente: {detection_percentage:.2f}%")
+
+    #return true_detected, detection_percentage

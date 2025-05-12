@@ -3,8 +3,12 @@ import random
 import numpy as np
 from torch.utils.data import DataLoader
 
-from data_utils import load_and_encode_data, AuthSequenceDataset, categorical_cols
+from data_utils import AuthSequenceDataset,load_and_encode_data
+from lstm_model import *
+from bilstm_model import *
 from model_utils import *
+
+
 
 # ======== Config ========
 def set_seed(seed=42):
@@ -29,27 +33,20 @@ dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
 
 # ======== Init Model ========
 vocab_sizes = [len(encoders[col].classes_) for col in categorical_cols]
-model = LSTMAnomalyModel(num_features=len(categorical_cols), vocab_sizes=vocab_sizes)
+#model = LSTMAnomalyModel(num_features=len(categorical_cols), vocab_sizes=vocab_sizes)
+modelBilstm = BiLSTMAnomalyModel(num_features=len(categorical_cols), vocab_sizes=vocab_sizes)
 
 # ======== Train ========
-losses = train_model(model, dataloader, device=device, epochs=30)
-plot_training_loss(losses)
+#losses = train_model(model, dataloader, device=device, epochs=30)
+#plot_training_loss(losses)
+
+lossesBilstm = train_model(modelBilstm, dataloader, device=device, epochs=30)
+plot_training_loss(lossesBilstm)
 
 # ======== Evaluate Anomalies ========
 threshold = 10.0
 anomaly_indices = find_anomalies(df)
 
-print(f"Totale righe marcate come anomalie (ground truth): {len(anomaly_indices)}")
-true_detected = 0
 
-for idx in anomaly_indices:
-    try:
-        score, is_anom = is_event_anomalous(df, model, idx, seq_len, threshold, device)
-        print(f"[{idx}] Score: {score:.2f} -> {'ANOMALO' if is_anom else 'normale'}")
-        if is_anom:
-            true_detected += 1
-    except ValueError:
-        continue
+evaluate_anomalies(df, modelBilstm, anomaly_indices, seq_len, threshold, device)
 
-print(f"Anomalie rilevate: {true_detected}")
-print(f"Percentuale rilevate correttamente: {100 * true_detected / len(anomaly_indices):.2f}%")

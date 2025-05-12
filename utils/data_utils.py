@@ -3,6 +3,7 @@ import torch
 from torch.utils.data import Dataset
 from sklearn.preprocessing import LabelEncoder
 
+
 # Colonne categoriche da usare nel modello
 categorical_cols = ["src_user", "src_domain", "dst_user", "dst_domain",
                     "src_comp", "dst_comp", "auth_type", "logon_type",
@@ -41,3 +42,5 @@ class AuthSequenceDataset(Dataset):
         x_seq = torch.tensor(x_seq, dtype=torch.long)
         y_target = torch.tensor(y_target.astype(int), dtype=torch.long)
         return x_seq, y_target
+
+
