@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import matplotlib.pyplot as plt
 from data_utils import categorical_cols
+#
 
 class LSTMAnomalyModel(nn.Module):
     def __init__(self, num_features, vocab_sizes, emb_dim=32, hidden_dim=64, lstm_dropout=0.3,DROP=False):
