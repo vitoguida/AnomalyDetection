@@ -5,10 +5,23 @@ import torch.nn.functional as F
 from torch.utils.data import Dataset, DataLoader
 from sklearn.preprocessing import LabelEncoder
 import numpy as np
+import random
+import matplotlib.pyplot as plt
 
 # ===========================
 # PARAMS
 # ===========================
+def set_seed(seed=42):
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)  # per multi-GPU
+
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+
+set_seed(42)
 csv_path = "../data/processed/8withredSplit.csv"
 seq_len = 10
 batch_size = 64
@@ -18,8 +31,8 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 # LOAD DATA
 # ===========================
 df = pd.read_csv(csv_path, header=None, dtype=str, low_memory=False)
-df = df[3200000:6855000]
-#df = df[2500000:2520000]
+#df = df[3200000:6855000]
+df = df[2500000:2580000]
 df = df.reset_index(drop=True)
 df.columns = ["time", "src_user", "src_domain", "dst_user", "dst_domain",
               "src_comp", "dst_comp", "auth_type", "logon_type", "orientation",
@@ -85,9 +98,14 @@ class LSTMAnomalyModel(nn.Module):
 # ===========================
 # TRAINING FUNCTION
 # ===========================
+
+
 def train_model(model, dataloader, epochs=10):
     optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
     model.to(device)
+
+    epoch_losses = []  # Per tracciare la loss media per ogni epoca
+
     for epoch in range(epochs):
         model.train()
         total_loss = 0
@@ -101,7 +119,20 @@ def train_model(model, dataloader, epochs=10):
             loss.backward()
             optimizer.step()
             total_loss += loss.item()
-        print(f"Epoch {epoch+1}/{epochs} - Loss: {total_loss / len(dataloader):.4f}")
+
+        avg_loss = total_loss / len(dataloader)
+        epoch_losses.append(avg_loss)
+        print(f"Epoch {epoch+1}/{epochs} - Loss: {avg_loss:.4f}")
+
+    # === PLOT LOSS ===
+    plt.figure(figsize=(8, 5))
+    plt.plot(range(1, epochs + 1), epoch_losses, marker='o', color='b')
+    plt.title("Andamento della Loss durante il Training")
+    plt.xlabel("Epoca")
+    plt.ylabel("Loss media")
+    plt.grid(True)
+    plt.show()
+
 
 # ===========================
 # ANOMALY SCORING
@@ -150,24 +181,24 @@ dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
 vocab_sizes = [len(encoders[col].classes_) for col in categorical_cols]
 model = LSTMAnomalyModel(num_features=len(categorical_cols), vocab_sizes=vocab_sizes)
 
-train_model(model, dataloader, epochs=10)
+train_model(model, dataloader, epochs=30)
 
 # ===========================
 # EXAMPLE ANOMALY CHECK
 # ===========================
-threshold = 30.0
-
+threshold = 10.0
 anomaly_indices = find_anomalies(df)
 
 print(f"Totale righe marcate come anomalie (ground truth): {len(anomaly_indices)}")
 
 # Per contare quante sono state classificate come anomale dal modello
 true_detected = 0
-threshold = 15.0
+
 
 for idx_to_check in anomaly_indices:
     try:
         score, is_anom = is_event_anomalous(df, model, idx_to_check, seq_len, threshold, device)
+        print(f"Anomaly Score: {score:.2f} -> {'ANOMALO' if is_anom else 'normale'}")
         if is_anom:
             true_detected += 1
     except ValueError:
@@ -177,6 +208,14 @@ print(f"Anomalie classificate come anomale dal modello: {true_detected}")
 print(f"Percentuale rilevate correttamente: {100 * true_detected / len(anomaly_indices):.2f}%")
 
 
-"""idx_to_check = indices[0]
+"""idx_to_check = 50
+score, is_anom = is_event_anomalous(df, model, idx_to_check, seq_len, threshold, device)
+print(f"[Index {idx_to_check}] Anomaly Score: {score:.2f} -> {'ANOMALO' if is_anom else 'normale'}")
+
+idx_to_check = 230
+score, is_anom = is_event_anomalous(df, model, idx_to_check, seq_len, threshold, device)
+print(f"[Index {idx_to_check}] Anomaly Score: {score:.2f} -> {'ANOMALO' if is_anom else 'normale'}")
+
+idx_to_check = 123
 score, is_anom = is_event_anomalous(df, model, idx_to_check, seq_len, threshold, device)
 print(f"[Index {idx_to_check}] Anomaly Score: {score:.2f} -> {'ANOMALO' if is_anom else 'normale'}")"""
