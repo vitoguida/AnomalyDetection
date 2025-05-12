@@ -11,6 +11,8 @@ categorical_cols = ["src_user", "src_domain", "dst_user", "dst_domain",
 
 def load_and_encode_data(csv_path, start=2500000, end=2580000):
     df = pd.read_csv(csv_path, header=None, dtype=str, low_memory=False)
+    if end == -1:
+       end = df.shape[0]
     df = df[start:end].reset_index(drop=True)
     df.columns = ["time", "src_user", "src_domain", "dst_user", "dst_domain",
                   "src_comp", "dst_comp", "auth_type", "logon_type", "orientation",

@@ -1,19 +1,9 @@
+
 import os
-import csv
-import json
-import os
-import sys
-import tempfile
-from argparse import ArgumentParser
-from collections import OrderedDict
-from tqdm import tqdm
-from LANLparser import LANLReader
 import csv
 import pandas as pd
 
 SECONDS_PER_DAY = 86400
-
-
 
 def sec2day(seconds):
     """Seconds to number of whole days."""
@@ -66,7 +56,6 @@ def split_by_day(log_filename, out_dir, keep_days=None):
     if not out_file is None:
         out_file.close()
 
-
 """def process_logfiles_for_training(auth_file, red_file, days_to_keep, output_dir, sample_output_dir, test_output_dir):
 
     if not os.path.isdir(output_dir):
@@ -113,7 +102,6 @@ def split_by_day(log_filename, out_dir, keep_days=None):
                         break"""
 
 
-
 def add_redteam_to_log(input_file, output_file, red_team):
     log_columns = ['time', 'source user@domain', 'destination user@domain', 'source computer', 'destination computer',
                    'authentication type', 'logon type', 'authentication orientation', 'success/failure']
@@ -142,7 +130,6 @@ def add_redteam_to_log(input_file, output_file, red_team):
     logs.to_csv(output_file, index=False)
 
 
-
 def split_user_domain_fields(infile_path, outfile_path):
     with open(infile_path, "r", encoding="utf8", newline='') as infile, \
             open(outfile_path, "w", encoding="utf8", newline='') as outfile:
@@ -158,14 +145,41 @@ def split_user_domain_fields(infile_path, outfile_path):
             new_row = [row[0], user1, domain1, user2, domain2] + row[3:]
             writer.writerow(new_row)
 
+import pandas as pd
+
+
+
+# Esempio di utilizzo:
+# filter_sequences("input_file.csv", seq_len=10, output_csv="output_file.csv")
+
+def generateCSVTest(input_csv, seq_len, output_csv):
+    with open(input_csv,"r", encoding="utf8", newline='') as infile:
+        reader = list(csv.reader(infile))  # convertiamo in lista per indicizzazione
+
+    selected_indices = set()
+
+    for i, row in enumerate(reader):
+        if row and row[-1] == '1':
+            start = max(0, i - seq_len)
+            for j in range(start, i + 1):  # include anche la riga stessa con '1'
+                selected_indices.add(j)
+
+    filtered_rows = [reader[i] for i in sorted(selected_indices)]
+
+    with open(output_csv,"w", encoding="utf8", newline='') as outfile:
+        writer = csv.writer(outfile)
+        writer.writerows(filtered_rows)
+
+
+
 
 if __name__ == '__main__':
-    INPUT_FILE = '../data/raw/auth.txt'
-    OUTPUT_DIR = '../data/processed/xdays'
+    #INPUT_FILE = '../data/raw/auth.txt'
+    #OUTPUT_DIR = '../data/processed/xdays'
     #split_by_day(INPUT_FILE,OUTPUT_DIR, keep_days=[6,7,8])
     #add_redteam_to_log("../data/processed/xdays/8.csv","../data/processed/8withred.csv","../data/raw/redteam.txt")
-    #add_redteam_to_log("dataset.csv", "pippo.csv", "red.csv")
-    split_user_domain_fields("../data/processed/8withred.csv","../data/processed/8withredSplit.csv")
+    #split_user_domain_fields("../data/processed/7withred.csv","../data/processed/7withredSplit.csv")
+    generateCSVTest("../data/processed/8withredSplit.csv",10,"../data/processed/8Test.csv")
 
 
 
