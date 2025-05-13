@@ -34,7 +34,7 @@ def plot_training_loss(losses):
     plt.grid(True)
     plt.show()
 
-def compute_anomaly_score(model, input_seq, true_event, device):
+"""def compute_anomaly_score(model, input_seq, true_event, device):
     model.eval()
     input_seq, true_event = input_seq.to(device), true_event.to(device)
     with torch.no_grad():
@@ -43,7 +43,29 @@ def compute_anomaly_score(model, input_seq, true_event, device):
         F.cross_entropy(output[col], true_event[:, i], reduction='none').item()
         for i, col in enumerate(categorical_cols)
     )
+    return total_loss"""
+
+
+def compute_anomaly_score(model, input_seq, true_event, device):
+    model.eval()
+    input_seq, true_event = input_seq.to(device), true_event.to(device)
+    with torch.no_grad():
+        output = model(input_seq)
+
+    for i, col in enumerate(categorical_cols):
+        out = output[col]
+        tgt = true_event[:, i]
+
+        if tgt.item() >= out.size(1):
+            print(f"🚨 ERRORE: col={col}, target={tgt.item()}, vocab_size={out.size(1)}")
+            raise ValueError("Indice target fuori range per softmax")
+
+    total_loss = sum(
+        F.cross_entropy(output[col], true_event[:, i], reduction='none').item()
+        for i, col in enumerate(categorical_cols)
+    )
     return total_loss
+
 
 def is_event_anomalous(df, model, index, seq_len, threshold, device):
     if index < seq_len:
