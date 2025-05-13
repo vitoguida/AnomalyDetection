@@ -115,7 +115,7 @@ def evaluate_anomalies(df, model, anomaly_indices, seq_len, threshold, device):
         try:
             # Calcolo del punteggio e determinazione dell'anomalia
             score, is_anom = is_event_anomalous(df, model, idx, seq_len, threshold, device)
-            print(f"[{idx}] Score: {score:.2f} -> {'ANOMALO' if is_anom else 'normale'}")
+            #print(f"[{idx}] Score: {score:.2f} -> {'ANOMALO' if is_anom else 'normale'}")
 
             # Incremento del conteggio se l'anomalia è rilevata correttamente
             if is_anom:

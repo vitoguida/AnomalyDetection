@@ -31,7 +31,7 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 epochs = 8
 
 # ======== Load & Split Train Data ========
-df_full, encoders = load_and_encode_data(csv_train,1,100000)
+df_full, encoders = load_and_encode_data(csv_train,1,1000000)
 
 # Split in 70% train, 30% validation
 df_train, df_val = train_test_split(df_full, test_size=0.3, shuffle=False, random_state=42)
@@ -43,13 +43,13 @@ train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=False)
 val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)  # 1 sample per time for scoring
 
 # ======== Load Evaluation Set (Ground Truth) ========
-df_eval, encoders_eval = load_and_encode_data(csv_test, 0,900)
+df_eval, encoders_eval = load_and_encode_data(csv_test, 0,-1)
 eval_dataset = AuthSequenceDataset(df_eval, seq_len)
 eval_loader = DataLoader(eval_dataset, batch_size=batch_size, shuffle=False)
 
 # ======== Init Model ========
 vocab_sizes = [len(encoders[col].classes_) for col in categorical_cols]
-model = LSTMAnomalyModel(num_features=len(categorical_cols), vocab_sizes=vocab_sizes, DROP=True)
+model = LSTMAnomalyModel(num_features=len(categorical_cols), vocab_sizes=vocab_sizes)
 #model = BiLSTMAnomalyModel(num_features=len(categorical_cols), vocab_sizes=vocab_sizes)
 #model = TransformerAnomalyModel(num_features=len(categorical_cols), vocab_sizes=vocab_sizes)
 
