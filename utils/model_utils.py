@@ -2,6 +2,8 @@ import torch
 import torch.nn.functional as F
 from data_utils import categorical_cols
 
+import numpy as np
+
 def train_model(model, dataloader, device, epochs=10):
     optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
     model.to(device)
@@ -45,7 +47,6 @@ def plot_training_loss(losses):
     )
     return total_loss"""
 
-
 def compute_anomaly_score(model, input_seq, true_event, device):
     model.eval()
     input_seq, true_event = input_seq.to(device), true_event.to(device)
@@ -57,7 +58,7 @@ def compute_anomaly_score(model, input_seq, true_event, device):
         tgt = true_event[:, i]
 
         if tgt.item() >= out.size(1):
-            print(f"🚨 ERRORE: col={col}, target={tgt.item()}, vocab_size={out.size(1)}")
+            print(f" ERRORE: col={col}, target={tgt.item()}, vocab_size={out.size(1)}")
             raise ValueError("Indice target fuori range per softmax")
 
     total_loss = sum(
@@ -65,7 +66,6 @@ def compute_anomaly_score(model, input_seq, true_event, device):
         for i, col in enumerate(categorical_cols)
     )
     return total_loss
-
 
 def is_event_anomalous(df, model, index, seq_len, threshold, device):
     if index < seq_len:
@@ -78,6 +78,30 @@ def is_event_anomalous(df, model, index, seq_len, threshold, device):
 
     score = compute_anomaly_score(model, x_seq, y_target, device)
     return score, score > threshold
+
+def calculate_threshold(df, model, seq_len, device):
+    scores = []
+
+    # Step 1: Calcola tutti gli anomaly scores
+    for idx in range(seq_len + 10, len(df), 10):
+        sequence = df.iloc[idx - seq_len:idx]
+        target = df.iloc[idx]
+
+        x_seq = torch.tensor(sequence[categorical_cols].astype(int).values, dtype=torch.long).unsqueeze(0).to(device)
+        y_target = torch.tensor(target[categorical_cols].astype(int).values, dtype=torch.long).unsqueeze(0).to(device)
+
+        score = compute_anomaly_score(model, x_seq, y_target, device)
+        scores.append(score)
+
+    # Step 2: Calcola media e deviazione standard
+    scores_np = np.array(scores)
+    mean_score = scores_np.mean()
+    std_score = scores_np.std()
+
+    # Step 3: Calcola la soglia
+    threshold = mean_score + std_score
+
+    return threshold
 
 def find_anomalies(df):
     return df[df['is_redteam'].astype(str) == '1'].index.tolist()
