@@ -31,7 +31,7 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 epochs = 8
 
 # ======== Load & Split Train Data ========
-df_full, encoders = load_and_encode_data(csv_train,1,1000000)
+df_full, encoders = load_and_encode_data(csv_train,1,100000)
 
 # Split in 70% train, 30% validation
 df_train, df_val = train_test_split(df_full, test_size=0.3, shuffle=False, random_state=42)
@@ -75,11 +75,17 @@ plt.show()"""
 
 # ======== Evaluate Anomalies on Evaluation Set (Ground Truth) ========
 anomaly_indices = find_anomalies(df_eval)
-evaluate_anomalies(df_eval, model, anomaly_indices, seq_len, threshold, device)
+cm1 = evaluate_anomalies(df_eval, model, anomaly_indices, seq_len, threshold, device)
+compute_metrics(cm1)
+
+
 print("test con pippo")
 pippo = [i for i in range(0, len(df_val), 3)]
+cm2 = evaluate_true_negatives(df_val, model, pippo, seq_len, threshold, device)
+compute_metrics(cm2)
 
+cm3 = cm1 + cm2
+compute_metrics(cm3)
 
-evaluate_anomalies(df_val, model, pippo, seq_len, threshold, device)
 
 

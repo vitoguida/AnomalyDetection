@@ -1,5 +1,7 @@
 import torch
 import torch.nn.functional as F
+from sklearn.metrics import confusion_matrix
+
 from data_utils import categorical_cols
 
 import numpy as np
@@ -107,19 +109,27 @@ def find_anomalies(df):
     return df[df['is_redteam'].astype(str) == '1'].index.tolist()
 
 def evaluate_anomalies(df, model, anomaly_indices, seq_len, threshold, device):
-
     print(f"Totale righe marcate come anomalie (ground truth): {len(anomaly_indices)}")
     true_detected = 0
+
+    TP = 0
+    FN = 0
+    FP = 0
+    TN = 0
 
     for idx in anomaly_indices:
         try:
             # Calcolo del punteggio e determinazione dell'anomalia
             score, is_anom = is_event_anomalous(df, model, idx, seq_len, threshold, device)
-            #print(f"[{idx}] Score: {score:.2f} -> {'ANOMALO' if is_anom else 'normale'}")
+            # print(f"[{idx}] Score: {score:.2f} -> {'ANOMALO' if is_anom else 'normale'}")
 
             # Incremento del conteggio se l'anomalia è rilevata correttamente
             if is_anom:
                 true_detected += 1
+                TP = TP + 1
+            else : FN = FN + 1
+
+
         except ValueError:
             # Gestione del caso in cui non è possibile calcolare l'anomalia
             continue
@@ -129,4 +139,60 @@ def evaluate_anomalies(df, model, anomaly_indices, seq_len, threshold, device):
     print(f"Anomalie rilevate: {true_detected}")
     print(f"Percentuale rilevate correttamente: {detection_percentage:.2f}%")
 
-    #return true_detected, detection_percentage
+    confusion_matrix = [[TN, FP], [FN, TP]]
+
+    return np.array(confusion_matrix)
+
+def evaluate_true_negatives(df, model, normal_indices, seq_len, threshold, device):
+
+    print(f"Totale righe normali (ground truth): {len(normal_indices)}")
+    true_negatives = 0
+    TP = 0
+    FN = 0
+    FP = 0
+    TN = 0
+
+    for idx in normal_indices:
+        try:
+            # Calcolo del punteggio e determinazione dell'anomalia
+            score, is_anom = is_event_anomalous(df, model, idx, seq_len, threshold, device)
+
+            # Se il modello classifica correttamente come normale
+            if not is_anom:
+                true_negatives += 1
+                TN = TN + 1
+            else : FP = FP + 1
+        except ValueError:
+            continue
+
+    # Calcolo della percentuale di veri negativi
+    true_negative_rate = 100 * true_negatives / len(normal_indices) if len(normal_indices) > 0 else 0
+    print(f"Veri negativi rilevati: {true_negatives}")
+    print(f"Percentuale veri negativi (specificità): {true_negative_rate:.2f}%")
+    confusion_matrix = [[TN, FP], [FN, TP]]
+    return np.array(confusion_matrix)
+
+
+
+def compute_metrics(cm):
+    tn, fp, fn, tp = cm.ravel()
+
+    precision = tp / (tp + fp + 1e-6)
+    recall    = tp / (tp + fn + 1e-6)
+    f1        = 2 * (precision * recall) / (precision + recall + 1e-6)
+    accuracy  = (tp + tn) / (tp + tn + fp + fn + 1e-6)
+
+    print("\n📈 Metriche calcolate:")
+    print(f"TP: {tp}, FP: {fp}, TN: {tn}, FN: {fn}")
+    print(f"Precision: {precision:.4f}")
+    print(f"Recall:    {recall:.4f}")
+    print(f"F1-score:  {f1:.4f}")
+    print(f"Accuracy:  {accuracy:.4f}")
+
+    return {
+        "TP": tp, "FP": fp, "TN": tn, "FN": fn,
+        "precision": precision,
+        "recall": recall,
+        "f1": f1,
+        "accuracy": accuracy
+    }
