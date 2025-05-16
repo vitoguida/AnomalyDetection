@@ -18,7 +18,7 @@ class LSTMAnomalyModel(nn.Module):
                 hidden_size=hidden_dim,
                 batch_first=True,
                 dropout=lstm_dropout,  # Dropout tra i layer dell’LSTM (se >1 layer)
-                num_layers=1  # Per attivare il dropout servono ≥2 layer
+                num_layers=2  # Per attivare il dropout servono ≥2 layer
             )
             self.dropout = nn.Dropout(p=lstm_dropout)  # Dropout esplicito dopo LSTM
             self.output_layers = nn.ModuleDict({
@@ -34,7 +34,7 @@ class LSTMAnomalyModel(nn.Module):
             })
 
 
-    def forward(self, x):  # QUI è dove forward deve stare
+    def forward(self, x):
         embedded = [self.embeddings[i](x[:, :, i]) for i in range(len(categorical_cols))]
         x_embed = torch.cat(embedded, dim=-1)
         _, (h_n, _) = self.lstm(x_embed)

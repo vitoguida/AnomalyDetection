@@ -99,11 +99,13 @@ def calculate_threshold(df, model, seq_len, device):
     scores_np = np.array(scores)
     mean_score = scores_np.mean()
     std_score = scores_np.std()
+    max_score = scores_np.max()
 
     # Step 3: Calcola la soglia
-    threshold = mean_score + std_score
+    #threshold = mean_score + std_score
 
-    return threshold
+
+    return int(mean_score), int(max_score)
 
 def find_anomalies(df):
     return df[df['is_redteam'].astype(str) == '1'].index.tolist()
@@ -143,7 +145,7 @@ def evaluate_anomalies(df, model, anomaly_indices, seq_len, threshold, device):
 
     return np.array(confusion_matrix)
 
-def evaluate_true_negatives(df, model, normal_indices, seq_len, threshold, device):
+def evaluate_regular(df, model, normal_indices, seq_len, threshold, device):
 
     print(f"Totale righe normali (ground truth): {len(normal_indices)}")
     true_negatives = 0
@@ -174,7 +176,7 @@ def evaluate_true_negatives(df, model, normal_indices, seq_len, threshold, devic
 
 
 
-def compute_metrics(cm):
+def compute_metrics(cm,PRINT=False):
     tn, fp, fn, tp = cm.ravel()
 
     precision = tp / (tp + fp + 1e-6)
@@ -182,12 +184,13 @@ def compute_metrics(cm):
     f1        = 2 * (precision * recall) / (precision + recall + 1e-6)
     accuracy  = (tp + tn) / (tp + tn + fp + fn + 1e-6)
 
-    print("\n📈 Metriche calcolate:")
-    print(f"TP: {tp}, FP: {fp}, TN: {tn}, FN: {fn}")
-    print(f"Precision: {precision:.4f}")
-    print(f"Recall:    {recall:.4f}")
-    print(f"F1-score:  {f1:.4f}")
-    print(f"Accuracy:  {accuracy:.4f}")
+    if PRINT:
+        print("\n📈 Metriche calcolate:")
+        print(f"TP: {tp}, FP: {fp}, TN: {tn}, FN: {fn}")
+        print(f"Precision: {precision:.4f}")
+        print(f"Recall:    {recall:.4f}")
+        print(f"F1-score:  {f1:.4f}")
+        print(f"Accuracy:  {accuracy:.4f}")
 
     return {
         "TP": tp, "FP": fp, "TN": tn, "FN": fn,

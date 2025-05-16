@@ -33,7 +33,7 @@ class BiLSTMAnomalyModel(nn.Module):
                 hidden_size=hidden_dim,
                 batch_first=True,
                 dropout=lstm_dropout,  # Dropout tra i layer dell’LSTM
-                num_layers=1,
+                num_layers=2,
                 bidirectional=True  # LSTM bidirezionale
             )
             self.dropout = nn.Dropout(p=lstm_dropout)

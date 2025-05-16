@@ -11,11 +11,7 @@ def sec2day(seconds):
     return day
 
 def split_by_day(log_filename, out_dir, keep_days=None):
-    """Split a raw LANL log file into separate days based on the timestamp.
 
-    Also filters out non-user activity and splits the source/destination
-    user/domain.
-    """
     if not os.path.isdir(out_dir):
         os.mkdir(out_dir)
 
@@ -145,12 +141,6 @@ def split_user_domain_fields(infile_path, outfile_path):
             new_row = [row[0], user1, domain1, user2, domain2] + row[3:]
             writer.writerow(new_row)
 
-import pandas as pd
-
-
-
-# Esempio di utilizzo:
-# filter_sequences("input_file.csv", seq_len=10, output_csv="output_file.csv")
 
 def generateCSVTest(input_csv, seq_len, output_csv):
     with open(input_csv,"r", encoding="utf8", newline='') as infile:
